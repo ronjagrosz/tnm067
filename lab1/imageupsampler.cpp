@@ -150,8 +150,13 @@ void ImageUpsampler::bilinearInterpolation(const Image *inputImage, Image *outpu
     for (size_t i = 0; i < outputSize.x; i++) {
         for (size_t j = 0; j < outputSize.y; j++) {
             // TODO: Task 4: Updated this code to use bilinear interpolation
-			auto x = i*imgScaleX;
-			auto y = j*imgScaleY;
+			//auto x = i*imgScaleX;
+			//auto y = j*imgScaleY;
+			float x = static_cast<float>(i) / (static_cast<float>(outputSize.x) - 1.f);
+			float y = static_cast<float>(j) / (static_cast<float>(outputSize.y) - 1.f);
+
+			x *= static_cast<float>(inputSize.x) - 1.f;
+			y *= static_cast<float>(inputSize.y) - 1.f;
 			auto r = floor(x);
 			auto c = floor(y);
 			size2_t mappedIndexQ11(r, c);
@@ -194,29 +199,71 @@ void ImageUpsampler::quadraticInterpolation(const Image *inputImage, Image *outp
     for (size_t i = 0; i < outputSize.x; i++) {
         for (size_t j = 0; j < outputSize.y; j++) {
             // TODO: Task 5: Updated this code to use quadratic interpolation
-			/*auto x = i*imgScaleX;
-			auto y = j*imgScaleY;
-			auto t = ;
-			auto b1 = (1 - t) * (1 - 2 * t);
+			//auto x = i*imgScaleX;
+			//auto y = j*imgScaleY;
+			float x = static_cast<float>(i) / (static_cast<float>(outputSize.x) - 1.f);
+			float y = static_cast<float>(j) / (static_cast<float>(outputSize.y) - 1.f);
+
+			x *= static_cast<float>(inputSize.x) - 1.f;
+			y *= static_cast<float>(inputSize.y) - 1.f;
+			auto r = floor(x);
+			auto c = floor(y);
+			r = glm::clamp(r, 0.f, (float) inputSize.x);
+			c = glm::clamp(c, 0.f, (float)inputSize.y);
+
+			size2_t mappedIndex1(r - 1, c - 1);
+			size2_t mappedIndex2(r, c - 1);
+			size2_t mappedIndex3(r + 1, c - 1);
+			size2_t mappedIndex4(r - 1, c);
+			size2_t mappedIndex5(r, c);
+			size2_t mappedIndex6(r + 1, c);
+			size2_t mappedIndex7(r - 1, c + 1);
+			size2_t mappedIndex8(r, c + 1);
+			size2_t mappedIndex9(r + 1, c + 1);
+
+			if (r - 1 < 0) {
+				mappedIndex1 = mappedIndex2;
+				mappedIndex4 = mappedIndex5;
+				mappedIndex7 = mappedIndex8;
+
+			} else if (c - 1 < 0) {
+				mappedIndex2 = mappedIndex5;
+				mappedIndex3 = mappedIndex6;
+			}
+
+			mappedIndex1 = glm::clamp(mappedIndex1, size2_t(0), inputSize - size_t(1));
+			mappedIndex2 = glm::clamp(mappedIndex2, size2_t(0), inputSize - size_t(1));
+			mappedIndex3 = glm::clamp(mappedIndex3, size2_t(0), inputSize - size_t(1));
+			mappedIndex4 = glm::clamp(mappedIndex4, size2_t(0), inputSize - size_t(1));
+			mappedIndex5 = glm::clamp(mappedIndex5, size2_t(0), inputSize - size_t(1));
+			mappedIndex6 = glm::clamp(mappedIndex6, size2_t(0), inputSize - size_t(1));
+			mappedIndex7 = glm::clamp(mappedIndex7, size2_t(0), inputSize - size_t(1));
+			mappedIndex8 = glm::clamp(mappedIndex8, size2_t(0), inputSize - size_t(1));
+			mappedIndex9 = glm::clamp(mappedIndex9, size2_t(0), inputSize - size_t(1));
+
+			auto t = (1 + x - r) / 2;
+			auto b1 = (1 - t) * (1 - (2 * t));
 			auto b2 = (4 * t) * (1 - t);
-			auto b3 = t * (2 * t - 1);
-			size2_t mappedIndexQ11(r, c);
-			size2_t mappedIndexQ12(r, c + 1);
-			size2_t mappedIndexQ21(r + 1, c);*/
+			auto b3 = t * ((2 * t) - 1);
+			auto f1 = b1 * in_img->getAsNormalizedDouble(mappedIndex1) + b2 * in_img->getAsNormalizedDouble(mappedIndex2) + b3 * in_img->getAsNormalizedDouble(mappedIndex3);
+			auto f2 = b1 * in_img->getAsNormalizedDouble(mappedIndex4) + b2 * in_img->getAsNormalizedDouble(mappedIndex5) + b3 * in_img->getAsNormalizedDouble(mappedIndex6);
+			auto f3 = b1 * in_img->getAsNormalizedDouble(mappedIndex7) + b2 * in_img->getAsNormalizedDouble(mappedIndex8) + b3 * in_img->getAsNormalizedDouble(mappedIndex9);
+			
+			// get pixel from input image at pixel coordinate mappedIndex
+			t = (1 + y - c) / 2;
+			b1 = (1 - t) * (1 - (2 * t));
+			b2 = ((4 * t) * (1 - t));
+			b3 = t * ((2 * t) - 1);
 
-            size2_t mappedIndex(i, j);
-            mappedIndex = glm::clamp(mappedIndex, size2_t(0), inputSize - size_t(1));
-
-            // get pixel from input image at pixel coordinate mappedIndex
-            auto pixel_intensity = in_img->getAsNormalizedDouble(mappedIndex);
-
+            auto pixel_intensity = (b1 * f1) + (b2 * f2) + (b3 * f3);
+            
             out_img->setFromNormalizedDVec4(
                 size2_t(i, j),
                 dvec4(pixel_intensity * pixelIntensityScaleFactor_.get()));  // set to output image
         }
     }
 }
-
+/*
 void ImageUpsampler::barycentricInterpolation(const Image *inputImage, Image *outputImage) {
     auto out_img = outputImage->getColorLayer()->getEditableRepresentation<LayerRAM>();
     auto in_img = inputImage->getColorLayer()->getRepresentation<LayerRAM>();
@@ -235,84 +282,179 @@ void ImageUpsampler::barycentricInterpolation(const Image *inputImage, Image *ou
 			auto r = floor(x);
 			auto c = floor(y);
 
-			auto p0x = r;
-			auto p0y = c;
+			auto vecA = glm::vec3(r, c + 1, 0);
+			auto vecB = glm::vec3(r, c, 0);
+			auto vecC = glm::vec3(r + 1, c + 1, 0);
+			auto vecD = glm::vec3(r + 1, c, 0);
+			auto vecP = glm::vec3(x, y, 0);
 
-			auto p1x = r + 1;
-			auto p1y = c;
+			auto normal = glm::cross(vecB - vecC, vecA - vecC);
 
-			auto p2x = r;
-			auto p2y = c + 1;
-			auto areaABC = 0.5;
-			auto areaPBC = sqrt(2) * ;
-			auto areaPCA = (1 * (1 - (y - p0y))) / 2;
+			auto areaABC = glm::length(glm::cross(vecB - vecA, vecC - vecA))/2.f;
+			auto areaPBC = glm::length(glm::cross(vecP - vecB, vecC - vecB))/2.f;
+			auto areaPCA = glm::length(glm::cross(vecC - vecP, vecA - vecB))/2.f;
 
-			if (y > ((x / c) + c * (1 - r))) {
-				auto p2x = r + 1;
-				auto p2y = c + 1;
 
-				auto areaABC = 0.5;
-				auto areaPBC = (1 * (p0x - x)) / 2;
-				auto areaPCA = (1 * (1 - (y - p0y))) / 2;
-			}
-	
-			//New points
-			size2_t mappedIndexT1(p0x, p0y);
-			size2_t mappedIndexT3(p1x, p1y);
-			size2_t mappedIndexT2(p2x, p2y);
+			size2_t mappedIndexA(r, c + 1);
+			size2_t mappedIndexB(r, c);
+			size2_t mappedIndexC(r + 1, c + 1);
+			size2_t mappedIndexD(r + 1, c);
+
+			mappedIndexA = glm::clamp(mappedIndexA, size2_t(0), inputSize - size_t(1));
+			mappedIndexB = glm::clamp(mappedIndexB, size2_t(0), inputSize - size_t(1));
+			mappedIndexC = glm::clamp(mappedIndexC, size2_t(0), inputSize - size_t(1));
+			mappedIndexD = glm::clamp(mappedIndexD, size2_t(0), inputSize - size_t(1));
 
 			//Barycentric coordinates
-			auto baryX = areaPBC / areaABC;
-			auto baryY = areaPCA / areaABC;
-			auto baryZ = 1 - baryX - baryY;
+			auto baryAlpha = areaPBC / areaABC;
+			auto baryBeta = areaPCA / areaABC;
+			auto baryGamma = 1 - baryAlpha - baryBeta;
 
+			auto pixel_intensity = 0.0f;
 
+			//if (baryAlpha >= 0 && baryAlpha <= 1 && baryBeta >= 0 && baryBeta <= 1 && baryAlpha + baryBeta <= 1) {
+			if ((x <= r)  && (x <= r + 1.f) && (y < (x + c - r))) {
+				// get pixel from input image at pixel coordinate mappedIndex
+				pixel_intensity = in_img->getAsNormalizedDouble(mappedIndexA) * baryAlpha +
+									   in_img->getAsNormalizedDouble(mappedIndexB) * baryBeta +
+									   in_img->getAsNormalizedDouble(mappedIndexC) * baryGamma;
+			}
+			else {
 
+				normal = glm::cross(vecD - vecC, vecB - vecC);
+				auto areaBCD = glm::length(glm::cross(vecB - vecD, vecC - vecD))/2.f;
+				auto areaPBC = glm::length(glm::cross(vecB - vecP, vecC - vecP))/2.f;
+				auto areaPCD = glm::length(glm::cross(vecD - vecP, vecD - vecC))/2.f;
 
-			auto Area = 1 / 2 * (-p1y*p2x + p0y*(-p1x + p2x) + p0x*(p1y - p2y) + p1x*p2y);
-			auto s = 1 / (2 * Area)*(p0y*p2x - p0x*p2y + (p2y - p0y)*x + (p0x - p2x)*y);
-			auto t = 1 / (2 * Area)*(p0x*p1y - p0y*p1x + (p0y - p1y)*x + (p1x - p0x)*y);
+				//Barycentric coordinates
+				baryAlpha = areaPBC / areaBCD;
+				baryBeta = areaPCD / areaBCD;
+				baryGamma = 1 - baryAlpha - baryBeta;
 
-            size2_t mappedIndex(i, j);
-            mappedIndex = glm::clamp(mappedIndex, size2_t(0), inputSize - size_t(1));
+				// get pixel from input image at pixel coordinate mappedIndex
+				pixel_intensity = in_img->getAsNormalizedDouble(mappedIndexA) * baryAlpha +
+					in_img->getAsNormalizedDouble(mappedIndexB) * baryBeta +
+					in_img->getAsNormalizedDouble(mappedIndexC) * baryGamma;
 
-            // get pixel from input image at pixel coordinate mappedIndex
-            auto pixel_intensity = in_img->getAsNormalizedDouble(mappedIndex);
+			}
+
 
             out_img->setFromNormalizedDVec4(
                 size2_t(i, j),
                 dvec4(pixel_intensity * pixelIntensityScaleFactor_.get()));  // set to output image
         }
     }
+}*/
+void ImageUpsampler::barycentricInterpolation(const Image *inputImage, Image *outputImage) {
+	auto out_img = outputImage->getColorLayer()->getEditableRepresentation<LayerRAM>();
+	auto in_img = inputImage->getColorLayer()->getRepresentation<LayerRAM>();
+
+	auto sampleSize = samplerSize_.get();
+	auto inputSize = inputImage->getDimensions();
+	auto outputSize = out_img->getDimensions();
+	auto imgScaleX = (float)inputSize.x / (float)outputSize.x;
+	auto imgScaleY = (float)inputSize.y / (float)outputSize.y;
+
+	for (size_t i = 0; i < outputSize.x; i++) {
+		for (size_t j = 0; j < outputSize.y; j++) {
+			// TODO: Task 6: Updated this code to use barycentric interpolation
+
+			//float x = i*imgScaleX;
+			//float y = j*imgScaleY;
+			float x = static_cast<float>(i) / (static_cast<float>(outputSize.x) - 1.f);
+			float y = static_cast<float>(j) / (static_cast<float>(outputSize.y) - 1.f);
+
+			x *= static_cast<float>(inputSize.x) - 1.f;
+			y *= static_cast<float>(inputSize.y) - 1.f;
+
+			size2_t A(floor(x), floor(y));
+			size2_t B(floor(x) + 1.f, floor(y));
+			size2_t C(floor(x), floor(y) + 1.f);
+			size2_t D(floor(x) + 1.f, floor(y) + 1.f);
+
+			A = glm::clamp(A, size2_t(0), inputSize - size_t(1));
+			B = glm::clamp(B, size2_t(0), inputSize - size_t(1));
+			C = glm::clamp(C, size2_t(0), inputSize - size_t(1));
+			D = glm::clamp(D, size2_t(0), inputSize - size_t(1));
+
+			glm::vec3 vA = glm::vec3(floor(x), floor(y), 0);
+			glm::vec3 vB = glm::vec3(floor(x) + 1.f, floor(y), 0);
+			glm::vec3 vC = glm::vec3(floor(x), floor(y) + 1.f, 0);
+			glm::vec3 vD = glm::vec3(floor(x) + 1.f, floor(y) + 1.f, 0);
+			glm::vec3 vP = glm::vec3(x, y, 0);
+
+			glm::vec3 u = vB - vA;
+			glm::vec3 v = vC - vA;
+			glm::vec3 w = vP - vA;
+
+			glm::vec3 vCrossW = glm::cross(v, w);
+			glm::vec3 vCrossU = glm::cross(v, u);
+			glm::vec3 uCrossW = glm::cross(u, w);
+			glm::vec3 uCrossV = glm::cross(u, v);
+			float denom = glm::length(uCrossV);
+
+			auto rtest = glm::dot(vCrossW, vCrossU);
+			auto ttest = glm::dot(uCrossW, uCrossV);
+			auto r = glm::length(vCrossW) / denom;
+			auto t = glm::length(uCrossW) / denom;
+
+			auto fA = in_img->getAsNormalizedDouble(A);
+			auto fB = in_img->getAsNormalizedDouble(B);
+			auto fC = in_img->getAsNormalizedDouble(C);
+
+			// P is not in triangle
+			if ((rtest < 0 && ttest < 0) || ((r + t) > 1)) {
+				fA = in_img->getAsNormalizedDouble(D);
+				glm::vec3 u = vB - vD;
+				glm::vec3 v = vC - vD;
+				glm::vec3 w = vP - vD;
+
+				glm::vec3 vCrossW = glm::cross(v, w);
+				glm::vec3 vCrossU = glm::cross(v, u);
+				glm::vec3 uCrossW = glm::cross(u, w);
+				glm::vec3 uCrossV = glm::cross(u, v);
+				float denom = glm::length(uCrossV);
+
+				rtest = glm::dot(vCrossW, vCrossU);
+				ttest = glm::dot(uCrossW, uCrossV);
+				r = glm::length(vCrossW) / denom;
+				t = glm::length(uCrossW) / denom;
+				if ((rtest < 0 && ttest < 0) || ((r + t) > 1)) {
+					// Something is shitty
+				}
+			}
+
+			auto pixel_intensity = (1 - r - t) * fA + r * fB + t * fC;
+
+			out_img->setFromNormalizedDVec4(
+				size2_t(i, j),
+				dvec4(pixel_intensity * pixelIntensityScaleFactor_.get()));  // set to output image
+		}
+	}
 }
 
 void ImageUpsampler::applyColorMap(const Image *inputImage, Image *outputImage) {
-    auto out_img = outputImage->getColorLayer()->getEditableRepresentation<LayerRAM>();
-    auto in_img = inputImage->getColorLayer()->getRepresentation<LayerRAM>();
+	auto out_img = outputImage->getColorLayer()->getEditableRepresentation<LayerRAM>();
+	auto in_img = inputImage->getColorLayer()->getRepresentation<LayerRAM>();
 
-    auto samplesize = samplerSize_;
-    auto inputSize = inputImage->getDimensions();
-    auto outputSize = out_img->getDimensions();
+	auto samplesize = samplerSize_;
+	auto inputSize = inputImage->getDimensions();
+	auto outputSize = out_img->getDimensions();
 
-    for (size_t i = 0; i < outputSize.x; i++) {
-        for (size_t j = 0; j < outputSize.y; j++) {
-            double x = static_cast<double>(i) / outputSize.x;
-            double y = static_cast<double>(j) / outputSize.y;
+	for (size_t i = 0; i < outputSize.x; i++) {
+		for (size_t j = 0; j < outputSize.y; j++) {
+			auto pixel_intensity =
+				in_img->getAsNormalizedDouble(size2_t(i, j));  // get from input image
+															   // scale factor for debugging
+			pixel_intensity *= pixelIntensityScaleFactor_.get();
 
-            size2_t mappedIndex(x * (inputSize.x - 1), y * (inputSize.y - 1));
-            auto pixel_intensity =
-                in_img->getAsNormalizedDouble(mappedIndex);  // get from input image
+			auto scalarColor = scalarColorMapping_.sample(pixel_intensity);
+			scalarColor.w = 1.0f;
 
-            // scale factor for debugging
-            pixel_intensity *= pixelIntensityScaleFactor_.get();
-
-            auto scalarColor = scalarColorMapping_.sample(pixel_intensity);
-            scalarColor.w = 1.0f;
-
-            out_img->setFromNormalizedDVec4(size2_t(i, j),
-                                            dvec4(scalarColor));  // set to output image
-        }
-    }
+			out_img->setFromNormalizedDVec4(size2_t(i, j),
+				dvec4(scalarColor));  // set to output image
+		}
+	}
 }
 
 }  // namespace
